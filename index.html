@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Cities</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+<body>
+
+<header>
+  <div class="jumbotron jumbotron-fluid" style="background-image: url(ci1.jpg);">
+    <div class="container">
+      <h1 class="text-light m-5 p-5 bk-dark">Let's Explore Cities Together</h1>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="form-group">
+        <input type="text" class="form-control" id="search_input" placeholder="Type the name of the city" style="width: 300px;" />
+        <button style="width: 200px; height:30px ;" class="btn btn-primary mt-4" id="search_button">Search</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-5">
+  <div class="row ">
+    <div class="col-lg-12 ">
+      <div id="map"></div>
+      <div class="spinner" id="spinner">
+        <img style="height: 70px;width: 70px;" src="spinner.gif" alt="Loading...." />
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-12">
+      <div id="place_details"></div>
+      <div id="photo_gallery"></div>
+    </div>
+  </div>
+</div>
+<div class=" mt-5  jumbotron jumbotron-fluid bg-dark" style="background-image: url(ci2.jpg);">
+  <div class="container">
+    <div class="col-md-6 text-white align-self-center text-center text-md-left">
+      <h4>&copy; 2023 Mahmoud AlAmareen</h4>
+    </div>
+  </div>
+</div>
+
+<script>
+  var searchInput = 'search_input';
+  var searchButton = document.getElementById('search_button');
+  var autocomplete;
+  var map;
+  var spinner = document.getElementById('spinner');
+  var placeDetailsContainer = document.getElementById('place_details');
+  var photoGallery = document.getElementById('photo_gallery');
+
+  function showSpinner() {
+    spinner.classList.add('visible');
+  }
+
+  function hideSpinner() {
+    spinner.classList.remove('visible');
+  }
+
+  function displayPlaceDetails(place) {
+    var detailsHtml = '<h1>' + place.name + '</h1>';
+    detailsHtml += '<p><strong>Address:</strong> ' + place.formatted_address + '</p>';
+
+    if (place.website) {
+      detailsHtml += '<p><strong>Website:</strong> <a href="' + place.website + '">' + place.website + '</a></p>';
+    }
+
+    if (place.formatted_phone_number) {
+      detailsHtml += '<p><strong>Phone:</strong> ' + place.formatted_phone_number + '</p>';
+    } else {
+      detailsHtml += '<p><strong>Phone:</strong> Phone number not available.</p>';
+    }
+   
+    placeDetailsContainer.innerHTML = detailsHtml;
+  }
+
+  function displayPlacePhotos(photos) {
+    if (photos.length > 0) {
+      var photoHtml = '<h1 mt-5>Photos:</h1>';
+      photoHtml += '<div class="row mt-5">';
+      
+      for (var i = 0; i < photos.length; i++) {
+        var photo = photos[i];
+        var photoUrl = photo.getUrl({maxWidth: 200, maxHeight: 200});
+        photoHtml += '<div class="col-md-3"><img src="' + photoUrl + '" alt="Place Photo" class="photo"></div>';
+      }
+      
+      photoHtml += '</div>';
+
+      photoGallery.innerHTML = photoHtml;
+    } else {
+      photoGallery.innerHTML = '<p>No photos available for this place.</p>';
+    }
+  }
+
+  function initialize() {
+    autocomplete = new google.maps.places.Autocomplete(document.getElementById(searchInput));
+
+    searchButton.addEventListener('click', function () {
+      showSpinner();
+
+      var place = autocomplete.getPlace();
+      if (!place || !place.geometry) {
+        window.alert("Invalid place. Please try again.");
+        hideSpinner();
+        return;
+      }
+
+      if (place.geometry.viewport) {
+        map.fitBounds(place.geometry.viewport); 
+      } else {
+        map.setCenter(place.geometry.location);
+        map.setZoom(17);
+      }
+
+           var marker = new google.maps.Marker({
+        map: map,
+        position: place.geometry.location
+      });
+
+      displayPlaceDetails(place);
+
+      // Request place photos
+      var service = new google.maps.places.PlacesService(map);
+      service.getDetails({placeId: place.place_id}, function (placeDetails, status) {
+        if (status === google.maps.places.PlacesServiceStatus.OK && placeDetails.photos) {
+          hideSpinner();
+          displayPlacePhotos(placeDetails.photos);
+        } else {
+          hideSpinner();
+          photoGallery.innerHTML = '<p>No photos available for this place.</p>';
+        }
+      });
+    });
+
+    map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 8,
+      center: {lat: 31.028816314765557, lng: 36.79774829993693}
+    });
+  }
+
+  google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+</body>
+</html>
